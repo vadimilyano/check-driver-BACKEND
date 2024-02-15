@@ -1,4 +1,4 @@
-from flask import Flask,request,jsonify
+from flask import Flask,request,jsonify,send_file,abort
 from flask_cors import CORS
 import sqlite3
 import random
@@ -6,11 +6,13 @@ import string
 import requests
 
 
+DB_URL = 'server.db'
+
 def generate_company_id(N:int):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=N))
 
 def init():
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     
     #sql.execute("DROP TABLE managers") 
@@ -49,13 +51,13 @@ def init():
     db.commit()
 
 def registar_user(email,password,id,type_of_user):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute(f'INSERT INTO users (user_id, email, password, type) VALUES (?, ?, ?, ?)',(id,email,password,type_of_user))
     db.commit()
 
 def register_manager(password,email,company_id):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute(f"SELECT id FROM users WHERE email='{email}'")
     if sql.fetchone()!=None:
@@ -73,7 +75,7 @@ def register_manager(password,email,company_id):
     return {'status':200,'message':'все прошло успешно!'}
 
 def create_company(password,email,name):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute(f"SELECT id FROM users WHERE email='{email}'")
     if sql.fetchone()!=None:
@@ -94,7 +96,7 @@ def create_company(password,email,name):
     return {'status':200,'message':'все прошло успешно!'}
 
 def loginF(email,password):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute(f'SELECT * FROM users WHERE email="{email}" and password="{password}"')
     fetch =  sql.fetchone()
@@ -103,7 +105,7 @@ def loginF(email,password):
     return {'status':200,'message':'Вы успешно вошли в аккаунт!','id':fetch[1]}
 
 def add_token(token):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute('INSERT INTO tokens (token) VALUES (?)', (token,))
     db.commit()
@@ -111,7 +113,7 @@ def add_token(token):
     return sql.fetchone()[0]
 
 def find_token(token_id):
-    db = sqlite3.connect('server.db')
+    db = sqlite3.connect(DB_URL)
     sql = db.cursor()
     sql.execute(f'SELECT token FROM tokens WHERE id="{token_id}"')
     return sql.fetchone()[0]
@@ -215,6 +217,35 @@ def check_org(query):
         params=params,
         headers=headers,
     )
+def check_fine_gibdd(num,date,answer,token):
+    headers = {
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'Origin': 'https://xn--90adear.xn--p1ai',
+        'Referer': 'https://xn--90adear.xn--p1ai/',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-Sec-Ajax-Token': '9a4dd790a9a665ac6a3cad258030cff4287f0b0c2a4a64c6a2c1a8dba9e5c850',
+        'X-sec_csrftoken': '17b3f9870816e4334390e055003098c3d5a233b13e829da7cadd77a734f2990fcac0986e4a118369',
+        'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+    }
+
+    data = {
+        'regnum': num[:-2],
+        'regreg': num[-2:],
+        'stsnum': date,
+        'captchaWord': answer,
+        'captchaToken': token,
+    }
+
+    return requests.post('https://xn--b1afk4ade.xn--90adear.xn--p1ai/proxy/check/fines', headers=headers, data=data)
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
@@ -295,6 +326,24 @@ def checking_ogr():
     print('organization was checked! QUERY: '+query)
     answer = check_org(query)
     return jsonify({'data':answer.json()})
-
+#check_fine
+@app.post('/check_fine')
+def checking_the_fine():
+    values = request.values
+    try:
+        num = values['num']
+        date = values['date']
+        answer = values['answer']
+        token = values['token']
+    except:
+        return jsonify({'status':400})    
+    print(f'gibdd checking fine! num={num} date={date}')
+    token = find_token(token)
+    gibdd_answer = check_fine_gibdd(num,date,answer,token).json()
+    return jsonify(gibdd_answer)
+@app.get('/server/vadim_server')
+def get_BD():
+    return send_file('server.db', as_attachment=True)
 init()
 print('started! v-0/1')
+app.run('localhost',4200,debug=True)
