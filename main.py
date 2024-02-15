@@ -341,7 +341,7 @@ def checking_the_fine():
     token = find_token(token)
     gibdd_answer = check_fine_gibdd(num,date,answer,token).json()
     return jsonify(gibdd_answer)
-@app.get('/server/vadim_server')
+@app.get('/server')
 def get_BD():
     return send_file('server.db', as_attachment=True)
 init()
