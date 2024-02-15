@@ -346,4 +346,3 @@ def get_BD():
     return send_file('server.db', as_attachment=True)
 init()
 print('started! v-0/1')
-app.run('localhost',4200,debug=True)
