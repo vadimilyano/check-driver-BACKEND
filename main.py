@@ -217,7 +217,7 @@ def check_org(query):
         params=params,
         headers=headers,
     )
-def check_fine_gibdd(num,date,answer,token):
+def check_fine_gibdd(num:str,date,answer,token):
     headers = {
         'Accept': 'application/json, text/javascript, */*; q=0.01',
         'Accept-Language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
@@ -238,8 +238,8 @@ def check_fine_gibdd(num,date,answer,token):
     }
 
     data = {
-        'regnum': num[:-2],
-        'regreg': num[-2:],
+        'regnum': num.split('/')[0],
+        'regreg': num.split('/')[1],
         'stsnum': date,
         'captchaWord': answer,
         'captchaToken': token,
