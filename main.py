@@ -361,4 +361,3 @@ def checking_ogr_data_newton():
     return requests.get(f'https://api.datanewton.ru/v1/counterparty?key={DATA_NEWTON_KEY}&filters=OWNER_BLOCK%2CADDRESS_BLOCK&inn={inn}').json()
 init()
 print('started! v-0/1')
-app.run('localhost',4200,debug=True)
