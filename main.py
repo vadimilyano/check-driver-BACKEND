@@ -4,9 +4,11 @@ import sqlite3
 import random
 import string
 import requests
+import time
 
 
 DB_URL = 'server.db'
+DATA_NEWTON_KEY = 'erepArD6xW6n'
 
 def generate_company_id(N:int):
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=N))
@@ -317,16 +319,19 @@ def checking_the_driver():
         valid = True
     gibdd_answer['valid'] = valid
     return jsonify(gibdd_answer)
-@app.post('/check_organization')
+@app.post('/check_organization/nalog1')
 def checking_ogr():
     try:
         query = request.values['query']
     except:
         return jsonify({'status':400})
     print('organization was checked! QUERY: '+query)
-    answer = check_org(query)
+    try:
+        answer = check_org(query)
+    except:
+        abort(400)
     return jsonify({'data':answer.json()})
-#check_fine
+
 @app.post('/check_fine')
 def checking_the_fine():
     values = request.values
@@ -341,8 +346,19 @@ def checking_the_fine():
     token = find_token(token)
     gibdd_answer = check_fine_gibdd(num,date,answer,token).json()
     return jsonify(gibdd_answer)
-@app.get('/server')
+@app.get('/server/vadim_server')
 def get_BD():
-    return send_file('server.db', as_attachment=True)
+    try:
+        return send_file('server.db', as_attachment=True)
+    except FileNotFoundError:
+        abort(777)
+@app.post('/check_organization/dataNewton')
+def checking_ogr_data_newton():
+    try:
+        inn = request.values['inn']
+    except:
+        abort(404)
+    return requests.get(f'https://api.datanewton.ru/v1/counterparty?key={DATA_NEWTON_KEY}&filters=OWNER_BLOCK%2CADDRESS_BLOCK&inn={inn}').json()
 init()
 print('started! v-0/1')
+app.run('localhost',4200,debug=True)
